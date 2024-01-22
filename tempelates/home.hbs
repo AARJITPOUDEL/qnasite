@@ -1,0 +1,23 @@
+<html lang="en">
+  <head>
+    <!-- ... (your head content) ... -->
+  </head>
+  <body>
+    <h1>Home</h1>
+    <h2>Hello {{naming}}</h2>
+
+    <form action="/add-question" method="post">
+      <label for="question">Add Question:</label>
+      <input type="text" id="question" name="question" required />
+      <input type="hidden" name="name" value="{{naming}}" />
+      <button type="submit">Submit</button>
+    </form>
+
+    <div>
+      <h3>Questions:</h3>
+      {{#each questions}}
+        <p>asks: {{user.name}} - {{question}}</p>
+      {{/each}}
+    </div>
+  </body>
+</html>
