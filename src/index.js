@@ -21,7 +21,6 @@ app.get("/signup", (req, res) => {
 app.get("/", (req, res) => {
   res.render("login");
 });
-
 app.post("/signup", async (req, res) => {
   try {
     const checking = await LogInCollection.findOne({ name: req.body.name });
@@ -29,17 +28,28 @@ app.post("/signup", async (req, res) => {
     if (checking) {
       res.send("User details already exist");
     } else {
-      const data = {
+      const user = {
         name: req.body.name,
         password: req.body.password,
         category: req.body.category,
+        questions: [], // Initialize with an empty array
       };
 
-      await LogInCollection.create(data);
+      // Fetch community questions
+      const communityQuestions = await CommunityQuestion.find().populate(
+        "user",
+        "name"
+      );
+
+      // Add community questions to the user's questions array
+      user.questions = communityQuestions.map((question) => question._id);
+
+      // Create the user
+      await LogInCollection.create(user);
 
       res.status(201).render("home", {
         naming: req.body.name,
-        questions: [],
+        questions: communityQuestions,
       });
     }
   } catch (error) {
@@ -47,6 +57,7 @@ app.post("/signup", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
+
 app.post("/login", async (req, res) => {
   try {
     const user = await LogInCollection.findOne({ name: req.body.name });
