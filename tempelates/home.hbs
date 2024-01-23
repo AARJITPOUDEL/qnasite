@@ -13,10 +13,31 @@
       <button type="submit">Submit</button>
     </form>
 
+    <form action="/logout" method="post">
+      <button type="submit">Logout</button>
+    </form>
     <div>
       <h3>Questions:</h3>
       {{#each questions}}
-        <p>asks: {{user.name}} - {{question}}</p>
+        <div>
+          <p>asks: {{user.name}} - {{question}}</p>
+
+          <!-- Reply form -->
+          <form action="/add-reply" method="post">
+            <input type="text" name="reply" placeholder="Your Reply" required />
+            <input type="hidden" name="questionId" value="{{this._id}}" />
+            <input type="hidden" name="name" value="{{naming}}" />
+            <button type="submit">Reply</button>
+          </form>
+
+          <!-- Display replies for this question -->
+          {{#if this.replies.length}}
+            <h4>Replies:</h4>
+            {{#each this.replies}}
+              <p>{{user.name}} replied: {{this.reply}}</p>
+            {{/each}}
+          {{/if}}
+        </div>
       {{/each}}
     </div>
   </body>

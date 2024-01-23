@@ -50,6 +50,23 @@ const communityQuestionSchema = new mongoose.Schema({
   },
 });
 
+const replySchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "LogInCollection",
+  },
+  question: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "CommunityQuestion",
+  },
+  reply: {
+    type: String,
+    required: true,
+  },
+});
+
+const Reply = mongoose.model("Reply", replySchema);
+
 const LogInCollection = mongoose.model("LogInCollection", logInSchema);
 const CommunityQuestion = mongoose.model(
   "CommunityQuestion",
@@ -59,4 +76,5 @@ const CommunityQuestion = mongoose.model(
 module.exports = {
   LogInCollection,
   CommunityQuestion,
+  Reply,
 };
