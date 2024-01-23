@@ -16,6 +16,7 @@
     <form action="/logout" method="post">
       <button type="submit">Logout</button>
     </form>
+
     <div>
       <h3>Questions:</h3>
       {{#each questions}}
@@ -24,21 +25,19 @@
 
           <!-- Reply form -->
           <form action="/add-reply" method="post">
-            <input type="text" name="reply" placeholder="Your Reply" required />
+            <label for="reply">Reply:</label>
+            <input type="text" id="reply" name="reply" required />
             <input type="hidden" name="questionId" value="{{this._id}}" />
             <input type="hidden" name="name" value="{{naming}}" />
-            <button type="submit">Reply</button>
+            <button type="submit">Submit</button>
           </form>
 
           <!-- Display replies for this question -->
-          {{#if this.replies.length}}
-            <h4>Replies:</h4>
-            {{#each this.replies}}
-              <p>{{user.name}} replied: {{this.reply}}</p>
-            {{/each}}
-          {{/if}}
+          {{#each this.replies}}
+            <p>{{user.name}} - {{reply}}</p>
+          {{/each}}
         </div>
       {{/each}}
     </div>
-  </body>
-</html>
+
+  </body></html>

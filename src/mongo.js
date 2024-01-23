@@ -49,7 +49,6 @@ const communityQuestionSchema = new mongoose.Schema({
     required: true,
   },
 });
-
 const replySchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -65,14 +64,12 @@ const replySchema = new mongoose.Schema({
   },
 });
 
-const Reply = mongoose.model("Reply", replySchema);
-
 const LogInCollection = mongoose.model("LogInCollection", logInSchema);
 const CommunityQuestion = mongoose.model(
   "CommunityQuestion",
   communityQuestionSchema
 );
-
+const Reply = mongoose.model("Reply", replySchema);
 module.exports = {
   LogInCollection,
   CommunityQuestion,

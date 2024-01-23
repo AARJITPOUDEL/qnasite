@@ -1,24 +1,23 @@
 const express = require("express");
-const session = require("express-session");
-const cookieParser = require("cookie-parser");
 const path = require("path");
-const { LogInCollection, CommunityQuestion, Reply } = require("./mongo"); // Add Reply model
+const session = require("express-session");
+const { LogInCollection, CommunityQuestion } = require("./mongo");
 const port = process.env.PORT || 3000;
 const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
 app.use(
   session({
     secret: "your-secret-key",
-    resave: true,
+    resave: false,
     saveUninitialized: true,
   })
 );
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
 const tempelatePath = path.join(__dirname, "../tempelates");
 const publicPath = path.join(__dirname, "../public");
-console.log(publicPath);
 
 app.set("view engine", "hbs");
 app.set("views", tempelatePath);
@@ -27,157 +26,259 @@ app.use(express.static(publicPath));
 app.get("/signup", (req, res) => {
   res.render("signup");
 });
+app
+  .route("/")
+  .all(async (req, res, next) => {
+    try {
+      if (req.session.loggedIn) {
+        const userQuestions = await LogInCollection.findOne({
+          name: req.session.username,
+        })
+          .populate("questions")
+          .exec();
 
-app.get("/", (req, res) => {
-  if (req.session.loggedIn) {
-    res.redirect("/home");
-  } else {
-    res.render("login");
-  }
-});
-app.get("/home", async (req, res) => {
-  // Check if the user is logged in using session
-  if (!req.session.loggedIn) {
-    return res.redirect("/");
-  }
+        const communityQuestions = await CommunityQuestion.find().populate(
+          "user",
+          "name"
+        );
 
-  try {
-    const user = await LogInCollection.findOne({ name: req.session.username })
-      .populate("questions")
-      .exec();
+        const allQuestions = userQuestions.questions.concat(communityQuestions);
 
-    const communityQuestions = await CommunityQuestion.find().populate(
-      "user",
-      "name"
-    );
-
-    res.render("home", {
-      naming: req.session.username,
-      questions: user.questions.concat(communityQuestions),
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
-  }
-});
-app.post("/logout", (req, res) => {
-  // Clear session on logout
-  req.session.destroy((err) => {
-    if (err) {
-      console.error(err);
+        res.render("home", {
+          naming: req.session.username,
+          questions: allQuestions,
+        });
+      } else {
+        next();
+      }
+    } catch (error) {
+      console.error(error);
       res.status(500).send("Internal Server Error");
-    } else {
-      res.redirect("/");
     }
+  })
+  .get((req, res) => {
+    res.render("login");
+  })
+  .post((req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send("Error during logout");
+      } else {
+        res.redirect("/");
+      }
+    });
   });
-});
-app.post("/signup", async (req, res) => {
+app.get("/", async (req, res) => {
   try {
-    const checking = await LogInCollection.findOne({ name: req.body.name });
+    if (req.session.loggedIn) {
+      const userQuestions = await LogInCollection.findOne({
+        name: req.session.username,
+      })
+        .populate("questions")
+        .exec();
 
-    if (checking) {
-      res.send("User details already exist");
-    } else {
-      const user = {
-        name: req.body.name,
-        password: req.body.password,
-        category: req.body.category,
-        questions: [], // Initialize with an empty array
-      };
-
-      // Fetch community questions
       const communityQuestions = await CommunityQuestion.find().populate(
         "user",
         "name"
       );
 
-      // Add community questions to the user's questions array
-      user.questions = communityQuestions.map((question) => question._id);
+      const allQuestions = userQuestions.questions.concat(communityQuestions);
 
-      // Create the user
-      await LogInCollection.create(user);
-
-      res.status(201).render("home", {
-        naming: req.body.name,
-        questions: communityQuestions,
+      res.render("home", {
+        naming: req.session.username,
+        questions: allQuestions,
       });
+    } else {
+      res.render("login");
     }
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
   }
 });
+app.get("/login", async (req, res) => {
+  try {
+    if (req.session.loggedIn) {
+      const userQuestions = await LogInCollection.findOne({
+        name: req.session.username,
+      })
+        .populate("questions")
+        .exec();
+
+      const communityQuestions = await CommunityQuestion.find().populate(
+        "user",
+        "name"
+      );
+
+      const allQuestions = userQuestions.questions.concat(communityQuestions);
+
+      res.render("home", {
+        naming: req.session.username,
+        questions: allQuestions,
+      });
+    } else {
+      res.render("login");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+app.get("/signup", async (req, res) => {
+  try {
+    if (req.session.loggedIn) {
+      const userQuestions = await LogInCollection.findOne({
+        name: req.session.username,
+      })
+        .populate("questions")
+        .exec();
+
+      const communityQuestions = await CommunityQuestion.find().populate(
+        "user",
+        "name"
+      );
+
+      const allQuestions = userQuestions.questions.concat(communityQuestions);
+
+      res.render("home", {
+        naming: req.session.username,
+        questions: allQuestions,
+      });
+    } else {
+      res.render("signup");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+// app.post("/add-reply", async (req, res) => {
+//   try {
+//     console.log("Reply form submitted by user: " + req.body.name); // Add this line for logging
+
+//     const user = await LogInCollection.findOne({ name: req.body.name });
+//     console.log("User found: " + user);
+//     if (user) {
+//       const reply = await Reply.create({
+//         user: user._id,
+//         question: req.body.questionId,
+//         reply: req.body.reply,
+//       });
+
+//       const question = await CommunityQuestion.findById(req.body.questionId);
+//       question.replies.push(reply);
+//       await question.save();
+
+//       const userQuestions = await LogInCollection.findOne({
+//         name: req.session.username,
+//       })
+//         .populate("questions")
+//         .exec();
+
+//       const communityQuestions = await CommunityQuestion.find().populate(
+//         "user",
+//         "name"
+//       );
+
+//       const allQuestions = userQuestions.questions.concat(communityQuestions);
+
+//       res.status(201).render("home", {
+//         naming: req.body.name,
+//         questions: allQuestions,
+//       });
+//     } else {
+//       res.send("User not found");
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
+
 app.post("/login", async (req, res) => {
   try {
     const user = await LogInCollection.findOne({ name: req.body.name });
-    const questionId = req.body.questionId;
+
     if (user && user.password === req.body.password) {
-      // Set session on successful login
+      const userQuestions = await LogInCollection.findOne({
+        name: req.body.name,
+      })
+        .populate("questions")
+        .exec();
+
+      const communityQuestions = await CommunityQuestion.find().populate(
+        "user",
+        "name"
+      );
+
       req.session.loggedIn = true;
-      req.session.username = user.name;
-      res.redirect("/home");
+      req.session.username = req.body.name;
+      req.session.questions =
+        userQuestions.questions.concat(communityQuestions);
+
+      res.status(201).render("home", {
+        naming: `${req.body.name}`,
+        questions: req.session.questions,
+      });
     } else {
-      res.send("Incorrect details");
+      res.send("Incorrect credentials");
     }
   } catch (e) {
     console.error(e);
     res.send("Wrong details");
   }
 });
-// app.post("/add-reply", async (req, res) => {
-//   try {
-//     // ... (existing code)
 
-//     // Fetch and display the replies for the specific question
-//     const questionWithReplies = await CommunityQuestion.findById(
-//       questionId
-//     ).populate({
-//       path: "replies",
-//       populate: {
-//         path: "user",
-//         select: "name",
-//       },
-//     });
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Error during logout");
+    } else {
+      res.redirect("/");
+    }
+  });
+});
 
-//     res.status(201).render("home", {
-//       naming: req.session.username,
-//       questions: communityQuestions,
-//       questionWithReplies: questionWithReplies, // Pass the question with replies to the template
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).send("Internal Server Error: " + error.message);
-//   }
-// });
+app.post("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Error during logout");
+    } else {
+      res.redirect("/");
+    }
+  });
+});
 
 app.post("/add-question", async (req, res) => {
   try {
     const user = await LogInCollection.findOne({ name: req.body.name });
 
     if (user) {
-      // Create a new community question
       const communityQuestion = await CommunityQuestion.create({
         user: user._id,
-        userName: user.name, // Store the user's name
-        category: user.category, // Store the user's category
+        userName: user.name,
+        category: user.category,
         question: req.body.question,
       });
 
-      // Update the user's questions array with the new community question
       await LogInCollection.findOneAndUpdate(
         { name: req.body.name },
         { $push: { questions: communityQuestion._id } }
       );
 
-      // Fetch community questions to display on the home page
       const communityQuestions = await CommunityQuestion.find().populate(
         "user",
         "name"
       );
 
+      req.session.questions = req.session.questions.concat(communityQuestions);
+
       res.status(201).render("home", {
         naming: req.body.name,
-        questions: communityQuestions,
+        questions: req.session.questions,
       });
     } else {
       res.send("User not found");
