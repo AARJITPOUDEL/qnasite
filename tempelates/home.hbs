@@ -1,6 +1,5 @@
 <html lang="en">
   <head>
-
   </head>
   <body>
     <h1>Home</h1>
@@ -21,23 +20,13 @@
       <h3>Questions:</h3>
       {{#each questions}}
         <div>
-          <p>asks: {{user.name}} - {{question}}</p>
-
-          <!-- Reply form -->
-          <form action="/add-reply" method="post">
-            <label for="reply">Reply:</label>
-            <input type="text" id="reply" name="reply" required />
-            <input type="hidden" name="questionId" value="{{this._id}}" />
-            <input type="hidden" name="name" value="{{naming}}" />
-            <button type="submit">Submit</button>
-          </form>
-
-          <!-- Display replies for this question -->
-          {{#each this.replies}}
-            <p>{{user.name}} - {{reply}}</p>
-          {{/each}}
+          <p>asks:
+            {{user.name}}
+            <a href="/question/{{this._id}}">{{question}}</a></p>
+          {{#each this.replies}}{{/each}}
         </div>
       {{/each}}
     </div>
 
-  </body></html>
+  </body>
+</html>

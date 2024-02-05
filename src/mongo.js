@@ -30,7 +30,20 @@ const logInSchema = new mongoose.Schema({
     },
   ],
 });
-
+const answerSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "LogInCollection",
+  },
+  question: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "CommunityQuestion",
+  },
+  answer: {
+    type: String,
+    required: true,
+  },
+});
 const communityQuestionSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -48,6 +61,12 @@ const communityQuestionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  replies: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Reply",
+    },
+  ],
 });
 const replySchema = new mongoose.Schema({
   user: {
@@ -63,13 +82,14 @@ const replySchema = new mongoose.Schema({
     required: true,
   },
 });
-
 const LogInCollection = mongoose.model("LogInCollection", logInSchema);
 const CommunityQuestion = mongoose.model(
   "CommunityQuestion",
   communityQuestionSchema
 );
 const Reply = mongoose.model("Reply", replySchema);
+const Answer = mongoose.model("Answer", answerSchema);
+
 module.exports = {
   LogInCollection,
   CommunityQuestion,

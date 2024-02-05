@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 const session = require("express-session");
-const { LogInCollection, CommunityQuestion } = require("./mongo");
+const { LogInCollection, CommunityQuestion, Reply } = require("./mongo");
 const port = process.env.PORT || 3000;
 const app = express();
 
@@ -70,6 +70,80 @@ app
       }
     });
   });
+app.use("/indi", async (req, res, next) => {
+  try {
+    if (req.session.loggedIn) {
+      const userQuestions = await LogInCollection.findOne({
+        name: req.session.username,
+      })
+        .populate("questions")
+        .exec();
+      const communityQuestions = await CommunityQuestion.find().populate(
+        "user",
+        "name"
+      );
+      const allQuestions = userQuestions.questions.concat(communityQuestions);
+      res.locals.userQuestions = allQuestions;
+    }
+    next();
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+app.get("/indi", async (req, res) => {
+  try {
+    const questions = res.locals.userQuestions;
+    if (!questions) {
+      return res.status(404).send("Question not found");
+    }
+    res.render("indi", { naming: req.session.username, questions });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+app.post("/add-reply", async (req, res) => {
+  try {
+    console.log("Reply form submitted by user: " + req.body.name);
+    const username = req.body.name;
+    const user = await LogInCollection.findOne({ name: username });
+    if (!user) {
+      return res.send("User not found");
+    }
+    const reply = new Reply({
+      user: user._id,
+      question: req.body.questionId,
+      reply: req.body.reply,
+    });
+    await reply.save();
+    const question = await CommunityQuestion.findById(req.body.questionId);
+    if (!question) {
+      return res.send("Question not found");
+    }
+    question.replies.push(reply);
+    await question.save();
+    res.redirect(`/question/${req.body.questionId}`);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.get("/question/:id", async (req, res) => {
+  try {
+    const question = await CommunityQuestion.findById(req.params.id)
+      .populate("user", "name")
+      .populate("replies");
+    if (!question) {
+      return res.status(404).send("Question not found");
+    }
+    res.render("indi", { naming: req.session.username, question });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
 app.get("/", async (req, res) => {
   try {
@@ -175,6 +249,7 @@ app.post("/login", async (req, res) => {
 
       req.session.loggedIn = true;
       req.session.username = req.body.name;
+
       req.session.questions =
         userQuestions.questions.concat(communityQuestions);
 
@@ -275,7 +350,7 @@ app.post("/signup", async (req, res) => {
     req.session.username = name;
     req.session.questions = [];
 
-    res.redirect("/"); //redirection code
+    res.redirect("/");
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
@@ -284,46 +359,3 @@ app.post("/signup", async (req, res) => {
 app.listen(port, () => {
   console.log("Port connected");
 });
-//reply section (not completed)
-// app.post("/add-reply", async (req, res) => {
-//   try {
-//     console.log("Reply form submitted by user: " + req.body.name); // Add this line for logging
-
-//     const user = await LogInCollection.findOne({ name: req.body.name });
-//     console.log("User found: " + user);
-//     if (user) {
-//       const reply = await Reply.create({
-//         user: user._id,
-//         question: req.body.questionId,
-//         reply: req.body.reply,
-//       });
-
-//       const question = await CommunityQuestion.findById(req.body.questionId);
-//       question.replies.push(reply);
-//       await question.save();
-
-//       const userQuestions = await LogInCollection.findOne({
-//         name: req.session.username,
-//       })
-//         .populate("questions")
-//         .exec();
-
-//       const communityQuestions = await CommunityQuestion.find().populate(
-//         "user",
-//         "name"
-//       );
-
-//       const allQuestions = userQuestions.questions.concat(communityQuestions);
-
-//       res.status(201).render("home", {
-//         naming: req.body.name,
-//         questions: allQuestions,
-//       });
-//     } else {
-//       res.send("User not found");
-//     }
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).send("Internal Server Error");
-//   }
-// });

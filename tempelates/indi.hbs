@@ -1,0 +1,37 @@
+<html lang="en">
+  <head></head>
+  <body>
+    <h1>Hello {{naming}}</h1>
+
+    <form action="/add-question" method="post">
+      <label for="question">Question:</label>
+      <input type="text" id="question" name="question" required />
+      <input type="hidden" name="name" value="{{naming}}" />
+      <button type="submit">Submit</button>
+    </form>
+
+    <hr />
+
+    {{#each questions}}
+      <div>
+        <h2>{{question}}</h2>
+        <p>Asks: {{user.name}}</p>
+      </div>
+    {{/each}}
+
+    <form action="/add-reply" method="post">
+      <label for="reply">Reply:</label>
+      <input type="text" id="reply" name="reply" required />
+      <input type="hidden" name="questionId" value="{{question._id}}" />
+      <input type="hidden" name="name" value="{{naming}}" />
+      <button type="submit">Submit</button>
+    </form>
+
+    <div>
+      <h2>Replies</h2>
+      {{#each question.replies}}
+        <p>{{username}} - {{reply}}</p>
+      {{/each}}
+    </div>
+  </body>
+</html>
